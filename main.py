@@ -6,8 +6,8 @@ from telegram.ext import Application, CommandHandler, ContextTypes
 
 app = Flask(__name__)
 
-TELEGRAM_TOKEN = "8035652460:AAEphHieXtY-4YE_1z2w0F4_5wKy_h4nK-A"
-CHAT_ID = "7752283157"
+TELEGRAM_TOKEN = "7997402769:AAGSSPQ2vohuCEnvdpHCNPq8l0aX2z6J808"
+CHAT_ID = "5458457612"
 
 # /start command
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
