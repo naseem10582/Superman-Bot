@@ -5,7 +5,7 @@ import os
 app = Flask(__name__)
 
 # ===== APNA TOKEN AUR CHAT ID YAHAN DAAL =====
-TELEGRAM_TOKEN = "PASTE_KAR_APNA_BOT_TOKEN_YAHAN"  # @BotFather se mila tha
+TELEGRAM_TOKEN = "8035652460:AAEphHieXtY-4YEXtmoLj-vInHm1yH-vH4U"  # @BotFather se mila tha
 CHAT_ID = "5458457612"  # Tera Chat ID - ye maine daal diya
 
 def send_telegram_message(text):
