@@ -13,7 +13,7 @@ TELEGRAM_URL = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
 # Pairs ke commands
 PAIRS = {
     "/xau": "XAUUSD",
-    "/xag": "XAGUSD", 
+    "/xag": "XAGUSD",
     "/btc": "BTCUSD",
     "/eth": "ETHUSD",
     "/sol": "SOLUSD",
@@ -39,4 +39,45 @@ RR: 1:3
 Confidence: 95%
 Time: {datetime.now().strftime('%I:%M %p')}
 
-⚠️ Valid for
+⚠️ Valid for next 15 min only"""
+
+    requests.post(TELEGRAM_URL, json={"chat_id": CHAT_ID, "text": msg})
+
+@app.route("/")
+def home():
+    return "Superman Bot is running!"
+
+@app.route("/", methods=["POST"])
+def webhook():
+    data = request.json
+
+    if "message" in data:
+        chat_id = data["message"]["chat"]["id"]
+        text = data["message"].get("text", "")
+
+        if text == "/start":
+            welcome = """🦸 Superman Bot Active 🦸
+
+Commands:
+/xau Gold
+/xag Silver
+/btc Bitcoin
+/eth Ethereum
+/sol Solana
+/zec Zcash
+/us100 Nasdaq
+/usoil Oil
+
+Type any command for signal"""
+            requests.post(TELEGRAM_URL, json={"chat_id": chat_id, "text": welcome})
+
+        elif text in PAIRS:
+            send_signal(PAIRS[text])
+            requests.post(TELEGRAM_URL, json={"chat_id": chat_id, "text": f"Signal sent for {PAIRS[text]} ✅"})
+
+    return "ok"
+
+# RAILWAY KE LIYE YE ZARURI HAI
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
