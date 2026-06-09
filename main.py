@@ -1,36 +1,65 @@
 from flask import Flask, request
 import requests
-from datetime import datetime
+import os
 
 app = Flask(__name__)
 
-# ⚠️ YAHAN APNA DAALNA HAI
-TELEGRAM_TOKEN = "7123456789:AAHdqTcvCH1vGWJxfSeofSAs0K5PALDsaw"  # BotFather wala
-CHAT_ID = "123456789"  # Tera Chat ID
+# ===== APNA TOKEN AUR CHAT ID YAHAN DAAL =====
+TELEGRAM_TOKEN = "PASTE_KAR_APNA_BOT_TOKEN_YAHAN"  # @BotFather se mila tha
+CHAT_ID = "5458457612"  # Tera Chat ID - ye maine daal diya
 
-@app.route('/vantage', methods=['POST'])
-def superman_signal():
-    data = request.json
-    
-    pair = data.get('pair', 'XAUUSD')
-    direction = data.get('direction', 'BUY') 
-    entry = data.get('entry', '4332')
-    tp1 = data.get('tp1', '4340')
-    tp2 = data.get('tp2', '4350')
-    sl = data.get('sl', '4320')
-    lot = data.get('lot', '0.01')
-    time_now = datetime.now().strftime("%I:%M %p")
-    
-    msg = f"🦸 SUPERMAN SIGNAL 🦸\n\nPair: {pair}\nAction: {direction}\nEntry: {entry}\nLot: {lot}\n\n🎯 TP1: {tp1}\n🎯 TP2: {tp2}\n🛑 SL: {sl}\n\n⏰ Time: {time_now}"
-    
+def send_telegram_message(text):
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
-    requests.post(url, json={"chat_id": CHAT_ID, "text": msg, "parse_mode": "HTML"})
-    
-    return {"status": "Signal Sent", "pair": pair}
+    payload = {
+        "chat_id": CHAT_ID,
+        "text": text,
+        "parse_mode": "HTML"
+    }
+    try:
+        response = requests.post(url, json=payload)
+        return response.json()
+    except Exception as e:
+        print(f"Error: {e}")
+        return None
 
 @app.route('/')
 def home():
     return "Superman Bot Live ✅"
 
+@app.route('/vantage', methods=['POST'])
+def vantage_webhook():
+    try:
+        data = request.get_json()
+        
+        pair = data.get('pair', 'XAUUSD')
+        direction = data.get('direction', 'BUY')
+        entry = data.get('entry', 'N/A')
+        tp1 = data.get('tp1', 'N/A')
+        tp2 = data.get('tp2', 'N/A')
+        sl = data.get('sl', 'N/A')
+        lot = data.get('lot', '0.01')
+        
+        message = f"""
+🦸 <b>SUPERMAN SIGNAL</b> 🦸
+
+<b>Pair:</b> {pair}
+<b>Action:</b> {direction}
+<b>Entry:</b> {entry}
+<b>Lot Size:</b> {lot}
+
+<b>TP1:</b> {tp1}
+<b>TP2:</b> {tp2}
+<b>SL:</b> {sl}
+
+<i>Time: 07:43 PM</i>
+        """
+        
+        send_telegram_message(message)
+        return {"status": "success", "message": "Signal sent to Telegram"}, 200
+        
+    except Exception as e:
+        return {"status": "error", "message": str(e)}, 400
+
 if __name__ == '__main__':
-    app.run()
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port)
