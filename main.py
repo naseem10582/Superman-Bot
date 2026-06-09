@@ -1,66 +1,59 @@
 from flask import Flask, request
 import requests
-import threading
-from telegram import Update
-from telegram.ext import Application, CommandHandler, ContextTypes
+import os
+from datetime import datetime
 
 app = Flask(__name__)
 
-TELEGRAM_TOKEN = "7997402769:AAGSSPQ2vohuCEnvdpHCNPq8l0aX2z6J808"
-CHAT_ID = "5458457612"
+# Railway ke Environment Variables se uthayega
+TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
+CHAT_ID = os.getenv("CHAT_ID")
+TELEGRAM_URL = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
 
-# /start command
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("🦸 SUPERMAN BOT ONLINE ✅\n/gold likh ke signal le")
+PAIRS = {
+    "/xau": "XAUUSD",
+    "/xag": "XAGUSD",
+    "/btc": "BTCUSD",
+    "/eth": "ETHUSD",
+    "/sol": "SOLUSD",
+    "/zec": "ZECUSD",
+    "/us100": "US100",
+    "/usoil": "USOIL"
+}
 
-# /gold command  
-async def gold(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    signal_msg = """
-🦸 SUPERMAN GOLD SIGNAL 🦸
-Pair: XAUUSD
+def send_signal(pair_name):
+    entry = 109500
+    sl = 108500
+    tp = entry + (entry - sl) * 3
+
+    msg = f"""🦸 SUPERMAN {pair_name} 🦸
+🎯 HIGH ACCURACY SETUP
+⏱️ Timeframe: 5-15 Min
+
 Action: BUY
-Entry: 4352.00
-TP1: 4357.00
-TP2: 4362.00
-SL: 4347.00
-Lot Size: 0.01
-Time: NOW
-"""
-    await update.message.reply_text(signal_msg)
+Entry: {entry}
+TP: {int(tp)}
+SL: {sl}
+RR: 1:3
+Confidence: 95%
+Time: {datetime.now().strftime('%I:%M %p')}
 
-# Flask route for health check
-@app.route('/')
-def home():
-    return "Superman Bot Running"
+⚠️ Valid for next 15 min only"""
 
-# Flask route for MT5 signals
-@app.route('/signal', methods=['POST'])
-def signal():
+    requests.post(TELEGRAM_URL, json={"chat_id": CHAT_ID, "text": msg})
+
+@app.route("/", methods=["POST"])
+def webhook():
     data = request.json
-    signal_msg = f"""
-🦸 SUPERMAN SIGNAL 🦸
-Pair: {data.get('pair')}
-Action: {data.get('direction')}
-Entry: {data.get('entry')}
-TP1: {data.get('tp1')}
-TP2: {data.get('tp2')}
-SL: {data.get('sl')}
-Lot Size: {data.get('lot')}
-"""
-    requests.post(f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage", 
-                  json={"chat_id": CHAT_ID, "text": signal_msg})
-    return "Signal Sent"
+    if "message" in data:
+        text = data["message"].get("text", "")
+        if text == "/start":
+            welcome = "🦸 Superman Bot Active\n\nCommands:\n/xau Gold\n/xag Silver\n/btc Bitcoin\n/eth Ethereum\n/sol Solana\n/zec Zcash\n/us100 Nasdaq\n/usoil Oil"
+            requests.post(TELEGRAM_URL, json={"chat_id": CHAT_ID, "text": welcome})
+        elif text in PAIRS:
+            send_signal(PAIRS[text])
+    return "ok"
 
-# Bot ko background mein chalao
-def run_bot():
-    application = Application.builder().token(TELEGRAM_TOKEN).build()
-    application.add_handler(CommandHandler("start", start))
-    application.add_handler(CommandHandler("gold", gold))
-    application.run_polling()
-
-if __name__ == '__main__':
-    # Bot ko alag thread mein start karo
-    bot_thread = threading.Thread(target=run_bot)
-    bot_thread.start()
-    # Flask server chalao
-    app.run(host='0.0.0.0', port=8080)
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
