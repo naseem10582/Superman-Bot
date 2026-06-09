@@ -1,66 +1,66 @@
 from flask import Flask, request
 import requests
-import os
+import threading
+from telegram import Update
+from telegram.ext import Application, CommandHandler, ContextTypes
 
 app = Flask(__name__)
 
-TELEGRAM_TOKEN = "7997402769:AAGX6DEOKI5v0DNAyOpVYWkTk6Yzrd4Ozsw"
-CHAT_ID = "5458457612"
+TELEGRAM_TOKEN = "8035652460:AAEphHieXtY-4YE_1z2w0F4_5wKy_h4nK-A"
+CHAT_ID = "7752283157"
 
-def send_telegram_message(text):
-    url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
-    payload = {
-        "chat_id": CHAT_ID,
-        "text": text,
-        "parse_mode": "HTML"
-    }
-    try:
-        response = requests.post(url, json=payload)
-        print(response.json())
-        return response.json()
-    except Exception as e:
-        print(f"Error: {e}")
-        return None
+# /start command
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("🦸 SUPERMAN BOT ONLINE ✅\n/gold likh ke signal le")
 
+# /gold command  
+async def gold(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    signal_msg = """
+🦸 SUPERMAN GOLD SIGNAL 🦸
+Pair: XAUUSD
+Action: BUY
+Entry: 4352.00
+TP1: 4357.00
+TP2: 4362.00
+SL: 4347.00
+Lot Size: 0.01
+Time: NOW
+"""
+    await update.message.reply_text(signal_msg)
+
+# Flask route for health check
 @app.route('/')
 def home():
-    send_telegram_message("🦸 <b>SUPERMAN BOT ONLINE</b> ✅\nServer chal raha hai")
-    return "Superman Bot Live ✅ Message Bhej Diya - Telegram Check Kar"
+    return "Superman Bot Running"
 
+# Flask route for MT5 signals
 @app.route('/signal', methods=['POST'])
-def webhook_signal():
-    try:
-        data = request.get_json()
-        
-        pair = data.get('pair', 'XAUUSD')
-        direction = data.get('direction', 'BUY')
-        entry = data.get('entry', 'N/A')
-        tp1 = data.get('tp1', 'N/A')
-        tp2 = data.get('tp2', 'N/A')
-        sl = data.get('sl', 'N/A')
-        lot = data.get('lot', '0.01')
-        
-        message = f"""
-🦸 <b>SUPERMAN SIGNAL</b> 🦸
+def signal():
+    data = request.json
+    signal_msg = f"""
+🦸 SUPERMAN SIGNAL 🦸
+Pair: {data.get('pair')}
+Action: {data.get('direction')}
+Entry: {data.get('entry')}
+TP1: {data.get('tp1')}
+TP2: {data.get('tp2')}
+SL: {data.get('sl')}
+Lot Size: {data.get('lot')}
+"""
+    requests.post(f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage", 
+                  json={"chat_id": CHAT_ID, "text": signal_msg})
+    return "Signal Sent"
 
-<b>Pair:</b> {pair}
-<b>Action:</b> {direction}
-<b>Entry:</b> {entry}
-<b>Lot Size:</b> {lot}
-
-<b>TP1:</b> {tp1}
-<b>TP2:</b> {tp2}
-<b>SL:</b> {sl}
-
-<i>Time: 08:00 PM</i>
-        """
-        
-        send_telegram_message(message)
-        return {"status": "success"}, 200
-        
-    except Exception as e:
-        return {"status": "error", "message": str(e)}, 400
+# Bot ko background mein chalao
+def run_bot():
+    application = Application.builder().token(TELEGRAM_TOKEN).build()
+    application.add_handler(CommandHandler("start", start))
+    application.add_handler(CommandHandler("gold", gold))
+    application.run_polling()
 
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port)
+    # Bot ko alag thread mein start karo
+    bot_thread = threading.Thread(target=run_bot)
+    bot_thread.start()
+    # Flask server chalao
+    app.run(host='0.0.0.0', port=8080)
